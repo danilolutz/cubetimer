@@ -16,6 +16,11 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+val enableAbiSplits = providers.gradleProperty("enableAbiSplits")
+    .orNull
+    ?.toBoolean()
+    ?: true
+
 android {
     namespace = "com.danilolutz.cubetimer"
     compileSdk {
@@ -56,7 +61,7 @@ android {
     }
     splits {
         abi {
-            isEnable = true
+            isEnable = enableAbiSplits
             reset()
             include("arm64-v8a", "armeabi-v7a", "x86_64")
             isUniversalApk = true
