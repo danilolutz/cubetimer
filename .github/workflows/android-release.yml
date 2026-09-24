@@ -1,0 +1,123 @@
+name: Android release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and publish release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Install Android SDK packages
+        run: |
+          set -euo pipefail
+          android_cli="$RUNNER_TEMP/android"
+          curl -fsSL https://dl.google.com/android/cli/latest/linux_x86_64/android -o "$android_cli"
+          chmod +x "$android_cli"
+          "$android_cli" --sdk="$ANDROID_HOME" --no-metrics sdk install \
+            platform-tools \
+            platforms/android-37.0 \
+            build-tools/37.0.0
+
+      - name: Set up JetBrains Runtime for Gradle
+        uses: actions/setup-java@v6
+        with:
+          distribution: jetbrains
+          java-version: "25"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          dependency-graph: disabled
+
+      - name: Restore release keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_KEYSTORE_BASE64"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/cubetimer-release.jks"
+
+      - name: Run unit tests, lint, and release assembly
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ runner.temp }}/cubetimer-release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
+          test -n "$ANDROID_KEY_ALIAS"
+          test -n "$ANDROID_KEY_PASSWORD"
+          ./gradlew --no-daemon testDebugUnitTest lint assembleRelease
+
+      - name: Verify tag version
+        run: |
+          set -euo pipefail
+          expected_version="${GITHUB_REF_NAME#v}"
+          universal_apk="app/build/outputs/apk/release/app-universal-release.apk"
+          actual_version="$("$ANDROID_HOME/build-tools/37.0.0/aapt" dump badging "$universal_apk" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p")"
+          test "$expected_version" = "$actual_version"
+
+      - name: Generate and verify checksums
+        run: |
+          set -euo pipefail
+          release_directory="app/build/outputs/apk/release"
+          checksum_file="$release_directory/SHA256SUMS.txt"
+          assets=(
+            "app-universal-release.apk"
+            "app-arm64-v8a-release.apk"
+            "app-armeabi-v7a-release.apk"
+            "app-x86_64-release.apk"
+          )
+
+          sha256_upper() {
+            sha256sum "$1" | awk '{ print toupper($1) }'
+          }
+
+          : > "$checksum_file"
+          for asset in "${assets[@]}"; do
+            checksum="$(sha256_upper "$release_directory/$asset")"
+            printf '%s  %s\n' "$checksum" "$asset" >> "$checksum_file"
+          done
+
+          (
+            cd "$release_directory"
+            sha256sum -c SHA256SUMS.txt
+          )
+
+          {
+            echo "## SHA-256 checksums"
+            echo
+            while read -r checksum asset; do
+              printf '### `%s`\n\n```text\n%s\n```\n\n' "$asset" "$checksum"
+            done < "$checksum_file"
+          } > "$RUNNER_TEMP/release-checksums.md"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "CubeTimer $GITHUB_REF_NAME" \
+            --notes "$(cat "$RUNNER_TEMP/release-checksums.md")" \
+            --generate-notes \
+            app/build/outputs/apk/release/app-universal-release.apk \
+            app/build/outputs/apk/release/app-arm64-v8a-release.apk \
+            app/build/outputs/apk/release/app-armeabi-v7a-release.apk \
+            app/build/outputs/apk/release/app-x86_64-release.apk \
+            app/build/outputs/apk/release/SHA256SUMS.txt \
+            app/build/outputs/apk/release/output-metadata.json

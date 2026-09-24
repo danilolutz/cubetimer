@@ -1,0 +1,61 @@
+name: Android CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Install Android SDK packages
+        run: |
+          set -euo pipefail
+          android_cli="$RUNNER_TEMP/android"
+          curl -fsSL https://dl.google.com/android/cli/latest/linux_x86_64/android -o "$android_cli"
+          chmod +x "$android_cli"
+          "$android_cli" --sdk="$ANDROID_HOME" --no-metrics sdk install \
+            platform-tools \
+            platforms/android-37.0 \
+            build-tools/37.0.0
+
+      - name: Set up JetBrains Runtime for Gradle
+        uses: actions/setup-java@v6
+        with:
+          distribution: jetbrains
+          java-version: "25"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          dependency-graph: disabled
+
+      - name: Run unit tests, lint, and debug assembly
+        run: ./gradlew --no-daemon testDebugUnitTest lint assembleDebug
+
+      - name: Upload lint reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: cubetimer-lint-${{ github.sha }}
+          path: |
+            app/build/reports/lint-results-debug.html
+            app/build/reports/lint-results-debug.sarif
+            app/build/reports/lint-results-debug.txt
+            app/build/reports/lint-results-debug.xml
+          if-no-files-found: warn
+          retention-days: 7

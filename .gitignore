@@ -1,0 +1,52 @@
+# Gradle and build output
+.gradle/
+**/build/
+
+# Android Studio and IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# Kotlin compiler and IDE caches
+.kotlin/
+.kotlin-build/
+
+# Android local configuration and captures
+local.properties
+.externalNativeBuild/
+.cxx/
+captures/
+*.hprof
+
+# APKs, app bundles, and signing material
+*.apk
+*.aab
+*.ap_
+*.keystore
+*.jks
+*.p12
+*.pem
+*.der
+*.csr
+key.properties
+
+# Java and Kotlin generated artifacts
+*.class
+*.jar
+*.war
+*.nar
+!gradle/wrapper/gradle-wrapper.jar
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Local tooling and temporary files
+build-check.log
+*.log
+*.tmp
+*.swp
+*~

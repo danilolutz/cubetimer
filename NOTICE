@@ -1,0 +1,14 @@
+CubeTimer includes a local, adapted port of the 3x3 random-state scramble
+generation path from TNoodle-lib 0.19.2.
+
+Source: https://github.com/thewca/tnoodle-lib
+Reference revision: v0.19.2
+Imported modules: min2phase (cs.min2phase), plus a small Kotlin adapter based
+on ThreeByThreeCubePuzzle's random-state generation contract.
+
+TNoodle-lib is the official WCA scramble program. Its source is licensed under
+the GNU General Public License, version 3 or later. The original
+copyright and license notices in imported files are retained.
+
+The CubeTimer project as a whole is distributed under the GNU General
+Public License, version 3 or later. See LICENSE.

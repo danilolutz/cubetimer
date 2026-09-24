@@ -1,0 +1,16 @@
+CubeTimer is a focused offline timer for 3×3 speedcubing.
+
+It generates random-state scrambles with a local port of TNoodle-lib, the WCA scramble program. The cube map updates to match every scramble, so you can inspect the state before starting.
+
+Features:
+
+- Tap-to-start and tap-to-stop timer.
+- Random-state 3×3 scrambles generated offline.
+- Cube map synchronized with the displayed scramble.
+- Local history of up to 200 solves.
+- Best, worst, mean, ao5, ao12, best ao5, and best ao12 statistics.
+- Delete a solve with undo, or clear the history with confirmation.
+- Solve detail card and PNG sharing.
+- Light and dark themes.
+
+CubeTimer has no account, ads, analytics, or Internet permission. Solves remain on the device. A shareable PNG is created only when you request sharing through Android's share sheet.

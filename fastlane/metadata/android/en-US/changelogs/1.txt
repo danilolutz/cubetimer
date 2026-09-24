@@ -1,0 +1,4 @@
+Initial release.
+
+- Offline 3×3 random-state scrambles.
+- Timer, cube map, statistics, local history, and PNG sharing.
