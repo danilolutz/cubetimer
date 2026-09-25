@@ -62,14 +62,14 @@ jobs:
           test -n "$ANDROID_KEYSTORE_PASSWORD"
           test -n "$ANDROID_KEY_ALIAS"
           test -n "$ANDROID_KEY_PASSWORD"
-          ./gradlew --no-daemon testDebugUnitTest lint assembleRelease
+          ./gradlew --no-daemon testDebugUnitTest lint assembleRelease -PenableAbiSplits=false
 
       - name: Verify tag version
         run: |
           set -euo pipefail
           expected_version="${GITHUB_REF_NAME#v}"
-          universal_apk="app/build/outputs/apk/release/app-universal-release.apk"
-          actual_version="$("$ANDROID_HOME/build-tools/37.0.0/aapt" dump badging "$universal_apk" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p")"
+          release_apk="app/build/outputs/apk/release/app-release.apk"
+          actual_version="$("$ANDROID_HOME/build-tools/37.0.0/aapt" dump badging "$release_apk" | sed -n "s/.*versionName='\([^']*\)'.*/\1/p")"
           test "$expected_version" = "$actual_version"
 
       - name: Generate and verify checksums
@@ -78,10 +78,7 @@ jobs:
           release_directory="app/build/outputs/apk/release"
           checksum_file="$release_directory/SHA256SUMS.txt"
           assets=(
-            "app-universal-release.apk"
-            "app-arm64-v8a-release.apk"
-            "app-armeabi-v7a-release.apk"
-            "app-x86_64-release.apk"
+            "app-release.apk"
           )
 
           sha256_upper() {
@@ -115,9 +112,6 @@ jobs:
             --title "CubeTimer $GITHUB_REF_NAME" \
             --notes "$(cat "$RUNNER_TEMP/release-checksums.md")" \
             --generate-notes \
-            app/build/outputs/apk/release/app-universal-release.apk \
-            app/build/outputs/apk/release/app-arm64-v8a-release.apk \
-            app/build/outputs/apk/release/app-armeabi-v7a-release.apk \
-            app/build/outputs/apk/release/app-x86_64-release.apk \
+            app/build/outputs/apk/release/app-release.apk \
             app/build/outputs/apk/release/SHA256SUMS.txt \
             app/build/outputs/apk/release/output-metadata.json

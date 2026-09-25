@@ -1,0 +1,1 @@
+Prepare the official universal APK for verifiable F-Droid distribution.
