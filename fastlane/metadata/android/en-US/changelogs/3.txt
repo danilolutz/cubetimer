@@ -1,0 +1,1 @@
+Disable Android dependency metadata in release APKs for F-Droid compatibility.
